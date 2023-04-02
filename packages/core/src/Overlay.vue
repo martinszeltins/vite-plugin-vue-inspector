@@ -166,6 +166,7 @@ export default {
       const { file, line, column } = params
       this.overlayVisible = false
       this.openInEditor(baseUrl, file, line, column)
+      this.toggleEnabled()
     },
     updateLinkParams(e) {
       const { targetNode, params } = this.getTargetNode(e)
