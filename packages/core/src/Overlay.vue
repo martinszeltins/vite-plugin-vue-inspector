@@ -15,6 +15,10 @@ export default {
   name: 'VueInspectorOverlay',
   data() {
     return {
+      activeEvent: undefined,
+      activeElementPath: [],
+      modifierKeyPressed: false,
+      jumperPositionIndex: 0,
       containerRef: null,
       floatsRef: null,
       enabled: inspectorOptions.enabled,
@@ -85,6 +89,7 @@ export default {
   },
   mounted() {
     this.toggleCombo && document.body.addEventListener('keydown', this.onKeydown)
+    document.body.addEventListener('keyup', this.handleAltRelease)
     this.toggleEventListener()
 
     // Expose control to global
@@ -95,6 +100,7 @@ export default {
       const listener = this.enabled ? document.body.addEventListener : document.body.removeEventListener
       listener?.('mousemove', this.updateLinkParams)
       listener?.('click', this.handleClick, true)
+      document.removeEventListener('wheel', this.handleElementJumper)
     },
     toggleEnabled() {
       this.enabled = !this.enabled
@@ -102,12 +108,20 @@ export default {
       this.toggleEventListener()
     },
     onKeydown(event) {
+      if (event.keyCode == 17) this.modifierKeyPressed = true
+
       if (event.repeat || event.key === undefined)
         return
 
       const isCombo = this.toggleCombo?.every(key => this.isKeyActive(key, event))
       if (isCombo)
         this.toggleEnabled()
+    },
+    handleAltRelease(event) {
+        if (event.keyCode == 17) {
+            this.modifierKeyPressed = false
+            this.jumperPositionIndex = 0
+        }
     },
     isKeyActive(key, event) {
       switch (key) {
@@ -156,8 +170,35 @@ export default {
           : null,
       }
     },
+    getJumperTargetNode() {
+      const splitRE = /(.+):([\d]+):([\d]+)$/
+      const path = this.activeElementPath.slice(this.jumperPositionIndex)
+      const targetNode = path.find(node => node?.hasAttribute?.(KEY_DATA))
+
+      if (!targetNode) {
+        return {
+          targetNode: null,
+          params: null,
+        }
+      }
+
+      const match = targetNode.getAttribute(KEY_DATA)?.match(splitRE)
+      
+      const [_, file, line, column] = match || []
+      return {
+        targetNode,
+        params: match
+          ? {
+              file,
+              line,
+              column,
+              title: file,
+            }
+          : null,
+      }
+    },
     handleClick(e) {
-      const { targetNode, params } = this.getTargetNode(e)
+      const { targetNode, params } = this.getJumperTargetNode()
       if (!targetNode)
         return
       e.preventDefault()
@@ -169,6 +210,15 @@ export default {
       this.toggleEnabled()
     },
     updateLinkParams(e) {
+      // New element found
+      if (this.activeEvent === undefined || this.activeEvent.target.dataset.vInspector !== e.target.dataset.vInspector) {
+        this.activeEvent = e
+        this.activeElementPath = e.composedPath()
+
+        document.removeEventListener('wheel', this.handleElementJumper, {passive: false})
+        document.addEventListener('wheel', this.handleElementJumper, {passive: false})
+      }
+
       const { targetNode, params } = this.getTargetNode(e)
       if (targetNode) {
         const rect = targetNode.getBoundingClientRect()
@@ -189,7 +239,38 @@ export default {
       }
       this.onUpdated()
     },
+    handleElementJumper(e) {
+        if (!this.modifierKeyPressed) return
+        e.preventDefault()
 
+        if (e.deltaY > 0 ) {
+            // Scroll back / go to parent
+            if (this.activeElementPath[this.jumperPositionIndex + 1].id !== 'app') {
+                this.jumperPositionIndex++
+                const { targetNode, params } = this.getJumperTargetNode()
+                const rect = targetNode.getBoundingClientRect()
+                this.overlayVisible = true
+                this.position.x = rect.x
+                this.position.y = rect.y
+                this.position.width = rect.width
+                this.position.height = rect.height
+                this.linkParams = params
+            }
+        } else if (e.deltaY < 0) {
+            // Scroll forward / go to child
+            if (this.jumperPositionIndex > 0) {
+                this.jumperPositionIndex--
+                const { targetNode, params } = this.getJumperTargetNode()
+                const rect = targetNode.getBoundingClientRect()
+                this.overlayVisible = true
+                this.position.x = rect.x
+                this.position.y = rect.y
+                this.position.width = rect.width
+                this.position.height = rect.height
+                this.linkParams = params
+            }
+        }
+    },
     // Public methods
     enable() {
       if (this.enabled)
