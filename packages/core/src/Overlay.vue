@@ -108,7 +108,7 @@ export default {
       this.toggleEventListener()
     },
     onKeydown(event) {
-      if (event.keyCode == 17) this.modifierKeyPressed = true
+      if (event.key.toLowerCase() == 'control') this.modifierKeyPressed = true
 
       if (event.repeat || event.key === undefined)
         return
@@ -118,7 +118,7 @@ export default {
         this.toggleEnabled()
     },
     handleAltRelease(event) {
-        if (event.keyCode == 17) {
+        if (event.key.toLowerCase() == 'control') {
             this.modifierKeyPressed = false
             this.jumperPositionIndex = 0
         }
