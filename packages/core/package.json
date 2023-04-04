@@ -1,16 +1,16 @@
 {
-  "name": "vite-plugin-vue-inspector",
-  "version": "3.4.0",
+  "name": "vue-component-explorer",
+  "version": "1.2.0",
   "description": "jump to local IDE source code while click the element of browser automatically.",
-  "author": "webfansplz",
+  "author": "martinszeltins",
   "license": "MIT",
-  "homepage": "https://github.com/webfansplz/vite-plugin-vue-inspector#readme",
+  "homepage": "https://github.com/martinszeltins/vite-plugin-vue-inspector",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/webfansplz/vite-plugin-vue-inspector.git"
+    "url": "git+https://github.com/martinszeltins/vite-plugin-vue-inspector.git"
   },
   "bugs": {
-    "url": "https://github.com/webfansplz/vite-plugin-vue-inspector/issues"
+    "url": "https://github.com/martinszeltins/vite-plugin-vue-inspector/issues"
   },
   "keywords": [
     "vue",
